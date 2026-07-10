@@ -18,14 +18,16 @@ export function SymptomTrendChart({
   logs: TrendLog[];
   symptomTypes: string[];
 }) {
-  const pointsByDay = [...logs]
-    .sort((a, b) => a.date.getTime() - b.date.getTime())
-    .map((log) => ({
-      day: formatDay(log.date),
-      values: new Map(log.symptoms.map((symptom) => [symptom.symptomType, symptom.severity])),
-    }))
-    .filter((point) => symptomTypes.some((type) => point.values.has(type)))
-    .slice(-7);
+  const valuesByDay = new Map(
+    logs.map((log) => [
+      formatDay(log.date),
+      new Map(log.symptoms.map((symptom) => [symptom.symptomType, symptom.severity])),
+    ]),
+  );
+  const pointsByDay = getRecentDays(7).map((day) => ({
+    day,
+    values: valuesByDay.get(day) ?? new Map<string, number>(),
+  }));
   const hasValues = pointsByDay.some((point) => symptomTypes.some((type) => point.values.has(type)));
 
   if (!hasValues) {
@@ -144,6 +146,17 @@ function createSegments(
 
 function formatDay(date: Date) {
   return date.toISOString().slice(0, 10);
+}
+
+function getRecentDays(count: number) {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  return Array.from({ length: count }, (_, index) => {
+    const day = new Date(today);
+    day.setUTCDate(today.getUTCDate() - (count - 1 - index));
+    return formatDay(day);
+  });
 }
 
 function formatSeverity(value: number) {
