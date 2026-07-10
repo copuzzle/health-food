@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { DailyLogForm } from "@/components/daily-log-form";
 import { LogHistoryList } from "@/components/log-history-list";
-import { DEFAULT_SYMPTOM_TYPES } from "@/lib/constants";
+import { SymptomTrendChart } from "@/components/symptom-trend-chart";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { countSymptomsByType, groupSymptomsByDay } from "@/lib/stats";
+import { countSymptomsByType } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
 
@@ -29,11 +29,7 @@ export default async function LogsPage({ searchParams }: Props) {
         orderBy: { sortOrder: "asc" },
       }).catch(() => [])
     : [];
-  const symptomTypes = symptomPreferences.length > 0
-    ? symptomPreferences.map((item) => item.name)
-    : user
-      ? [...DEFAULT_SYMPTOM_TYPES]
-      : [];
+  const symptomTypes = symptomPreferences.map((item) => item.name);
   const editingLog = logs.find((log) => log.id === editId);
 
   const symptoms = logs.flatMap((log) => log.symptoms);
@@ -44,7 +40,6 @@ export default async function LogsPage({ searchParams }: Props) {
       occurredAt: log.date,
     })),
   );
-  const byDay = groupSymptomsByDay(symptomsForStats);
   const byType = countSymptomsByType(symptomsForStats);
   const recentLogs = logs.slice(0, 2);
 
@@ -119,31 +114,20 @@ export default async function LogsPage({ searchParams }: Props) {
         </div>
       </section>
 
-      <section className="rounded-[2rem] bg-white/75 p-5 shadow-soft">
-        <h2 className="text-lg font-black">按日趋势</h2>
-        <div className="mt-4 space-y-3">
-          {Object.entries(byDay).length > 0 ? (
-            Object.entries(byDay).map(([day, stat]) => (
-              <div key={day} className="rounded-2xl bg-oat px-4 py-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="font-bold">{day}</span>
-                  <span>平均严重度 {stat.avgSeverity}</span>
-                </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
-                  <div className="h-full rounded-full bg-clay" style={{ width: `${Math.min(stat.avgSeverity * 10, 100)}%` }} />
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-kelp/65">保存带症状的记录后会显示趋势。</p>
-          )}
-        </div>
-      </section>
+      {symptomTypes.length > 0 && (
+        <section className="rounded-[2rem] bg-white/75 p-5 shadow-soft">
+          <h2 className="text-lg font-black">按日趋势</h2>
+          <p className="mt-1 text-xs text-kelp/55">展示你在“我的”中设置的症状指标，最多显示最近 7 天</p>
+          <div className="mt-4">
+            <SymptomTrendChart logs={logs} symptomTypes={symptomTypes} />
+          </div>
+        </section>
+      )}
 
       <section className="space-y-3">
         <h2 className="text-xl font-black">更多分析</h2>
         <p className="rounded-[2rem] bg-white/60 p-5 text-sm leading-6 text-kelp/70">
-          后续可以在这里加入按食物、症状、连续天数的筛选和图表。当前先保证多天记录可浏览、可编辑。
+          后续可以在这里加入按食物和连续天数的筛选。当前先保证多天记录可浏览、可编辑。
         </p>
       </section>
     </div>
