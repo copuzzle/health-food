@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  email              String             @unique
+  passwordHash       String?
+  name               String?
+  createdAt          DateTime           @default(now())
+  restaurants        Restaurant[]
+  ratings            RestaurantRating[]
+  foodLogs           FoodLog[]
+  symptomLogs        SymptomLog[]
+  symptomPreferences SymptomPreference[]
+  dailyLogs          DailyLog[]
+  dailySymptomRatings DailySymptomRating[]
+}
+
+model Restaurant {
+  id        String             @id @default(cuid())
+  name      String
+  address   String
+  lat       Float
+  lng       Float
+  city      String
+  tags      String[]
+  createdBy String
+  createdAt DateTime           @default(now())
+  creator   User               @relation(fields: [createdBy], references: [id])
+  ratings   RestaurantRating[]
+
+  @@index([city])
+  @@index([createdBy])
+}
+
+model RestaurantRating {
+  id                 String     @id @default(cuid())
+  restaurantId       String
+  userId             String
+  fodmapScore        Int
+  symptomSafetyScore Int
+  comment            String?
+  createdAt          DateTime   @default(now())
+  restaurant         Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, userId])
+  @@index([userId])
+}
+
+model FoodLog {
+  id          String       @id @default(cuid())
+  userId      String
+  mealTime    DateTime
+  foods       String[]
+  notes       String?
+  createdAt   DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symptoms    SymptomLog[]
+
+  @@index([userId, mealTime])
+}
+
+model SymptomLog {
+  id          String   @id @default(cuid())
+  foodLogId   String
+  userId      String
+  symptomType String
+  severity    Int
+  occurredAt  DateTime
+  notes       String?
+  foodLog     FoodLog  @relation(fields: [foodLogId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, occurredAt])
+  @@index([foodLogId])
+}
+
+model SymptomPreference {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  sortOrder Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId, sortOrder])
+}
+
+model DailyLog {
+  id          String               @id @default(cuid())
+  userId      String
+  date        DateTime
+  breakfast   String[]
+  lunch       String[]
+  dinner      String[]
+  notes       String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symptoms    DailySymptomRating[]
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model DailySymptomRating {
+  id          String   @id @default(cuid())
+  dailyLogId  String
+  userId      String
+  symptomType String
+  severity    Int
+  createdAt   DateTime @default(now())
+  dailyLog    DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([dailyLogId, symptomType])
+  @@index([userId, symptomType])
+}
