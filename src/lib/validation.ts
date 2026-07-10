@@ -2,7 +2,9 @@ import { z } from "zod";
 import { FOODMAP_TAGS } from "@/lib/constants";
 
 const score = z.coerce.number().int().min(1).max(5);
-const severity = z.coerce.number().int().min(1).max(5);
+const severity = z.coerce.number().min(0).max(5).refine((value) => value * 2 === Math.round(value * 2), {
+  message: "Severity must use 0.5 increments",
+});
 
 export const sessionSchema = z.object({
   mode: z.enum(["login", "register"]).default("login"),

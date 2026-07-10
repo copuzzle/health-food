@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { DailyLogForm } from "@/components/daily-log-form";
 import { DEFAULT_SYMPTOM_TYPES } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/auth";
@@ -6,7 +7,12 @@ import { countSymptomsByType, groupSymptomsByDay } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
 
-export default async function LogsPage() {
+type Props = {
+  searchParams?: Promise<{ edit?: string }>;
+};
+
+export default async function LogsPage({ searchParams }: Props) {
+  const editId = (await searchParams)?.edit;
   const user = await getCurrentUser().catch(() => null);
   const logs = user
     ? await prisma.dailyLog.findMany({
@@ -27,6 +33,7 @@ export default async function LogsPage() {
     : user
       ? [...DEFAULT_SYMPTOM_TYPES]
       : [];
+  const editingLog = logs.find((log) => log.id === editId);
 
   const symptoms = logs.flatMap((log) => log.symptoms);
   const symptomsForStats = logs.flatMap((log) =>
@@ -41,7 +48,27 @@ export default async function LogsPage() {
 
   return (
     <div className="space-y-5">
-      <DailyLogForm disabled={!user} symptomTypes={symptomTypes} />
+      <DailyLogForm
+        key={editingLog?.id ?? "new-log"}
+        disabled={!user}
+        symptomTypes={symptomTypes}
+        editingLog={
+          editingLog
+            ? {
+                id: editingLog.id,
+                date: editingLog.date.toISOString().slice(0, 10),
+                breakfast: editingLog.breakfast,
+                lunch: editingLog.lunch,
+                dinner: editingLog.dinner,
+                notes: editingLog.notes,
+                symptoms: editingLog.symptoms.map((symptom) => ({
+                  symptomType: symptom.symptomType,
+                  severity: symptom.severity,
+                })),
+              }
+            : null
+        }
+      />
 
       <section className="grid grid-cols-2 gap-3">
         <SummaryCard label="记录天数" value={logs.length} />
@@ -55,7 +82,7 @@ export default async function LogsPage() {
             Object.entries(byType).map(([type, stat]) => (
               <div key={type} className="flex items-center justify-between rounded-2xl bg-oat px-4 py-3 text-sm">
                 <span className="font-bold">{type}</span>
-                <span>{stat.count} 次 / 最高 {stat.maxSeverity}</span>
+                <span>{stat.count} 次 / 最高 {formatSeverity(stat.maxSeverity)}</span>
               </div>
             ))
           ) : (
@@ -90,7 +117,15 @@ export default async function LogsPage() {
         {logs.length > 0 ? (
           logs.map((log) => (
             <article key={log.id} className="rounded-[1.75rem] bg-white/75 p-4 shadow-sm">
-              <p className="text-xs font-bold text-clay">{log.date.toLocaleDateString("zh-CN")}</p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-bold text-clay">{log.date.toLocaleDateString("zh-CN")}</p>
+                <Link
+                  href={`/logs?edit=${log.id}`}
+                  className="rounded-full bg-kelp px-3 py-1 text-xs font-black text-oat"
+                >
+                  编辑
+                </Link>
+              </div>
               <div className="mt-3 grid gap-2 text-sm">
                 <MealLine label="早餐" foods={log.breakfast} />
                 <MealLine label="午餐" foods={log.lunch} />
@@ -101,7 +136,7 @@ export default async function LogsPage() {
                 <div className="mt-3 flex flex-wrap gap-2">
                   {log.symptoms.map((symptom) => (
                     <span key={symptom.id} className="rounded-full bg-clay/15 px-3 py-1 text-xs font-bold text-kelp">
-                      {symptom.symptomType} {symptom.severity}级
+                      {symptom.symptomType} {formatSeverity(symptom.severity)} / 5
                     </span>
                   ))}
                 </div>
@@ -134,4 +169,8 @@ function MealLine({ label, foods }: { label: string; foods: string[] }) {
       {foods.length > 0 ? foods.join("，") : "未填写"}
     </p>
   );
+}
+
+function formatSeverity(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }

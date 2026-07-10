@@ -5,11 +5,32 @@ import { useState } from "react";
 import { toDateInputValue } from "@/lib/dates";
 import { parseCommaList } from "@/lib/validation";
 
-export function DailyLogForm({ disabled, symptomTypes }: { disabled: boolean; symptomTypes: string[] }) {
+export type EditableDailyLog = {
+  id: string;
+  date: string;
+  breakfast: string[];
+  lunch: string[];
+  dinner: string[];
+  notes: string | null;
+  symptoms: Array<{ symptomType: string; severity: number }>;
+};
+
+export function DailyLogForm({
+  disabled,
+  symptomTypes,
+  editingLog,
+}: {
+  disabled: boolean;
+  symptomTypes: string[];
+  editingLog?: EditableDailyLog | null;
+}) {
   const router = useRouter();
   const [status, setStatus] = useState<string | null>(null);
-  const [selectedSymptoms, setSelectedSymptoms] = useState<Record<string, number>>({});
-  const defaultDate = toDateInputValue(new Date());
+  const [selectedSymptoms, setSelectedSymptoms] = useState<Record<string, number>>(() =>
+    Object.fromEntries((editingLog?.symptoms ?? []).map((symptom) => [symptom.symptomType, symptom.severity])),
+  );
+  const defaultDate = editingLog?.date ?? toDateInputValue(new Date());
+  const formKey = editingLog?.id ?? "new-log";
 
   async function submit(formData: FormData) {
     const symptoms = Object.entries(selectedSymptoms).map(([symptomType, severity]) => ({
@@ -34,6 +55,7 @@ export function DailyLogForm({ disabled, symptomTypes }: { disabled: boolean; sy
     if (response.ok) {
       setSelectedSymptoms({});
       setStatus("记录已保存");
+      router.push("/logs");
       router.refresh();
     } else {
       setStatus("保存失败，请确认至少填写一餐");
@@ -41,8 +63,19 @@ export function DailyLogForm({ disabled, symptomTypes }: { disabled: boolean; sy
   }
 
   return (
-    <form action={submit} className="rounded-[2rem] bg-white/75 p-5 shadow-soft">
-      <h2 className="text-lg font-black">登记</h2>
+    <form key={formKey} action={submit} className="rounded-[2rem] bg-white/75 p-5 shadow-soft">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-black">{editingLog ? "修改记录" : "登记"}</h2>
+        {editingLog && (
+          <button
+            type="button"
+            onClick={() => router.push("/logs")}
+            className="rounded-full bg-oat px-3 py-1 text-xs font-bold text-kelp"
+          >
+            取消编辑
+          </button>
+        )}
+      </div>
       <label className="mt-4 block text-sm font-bold">
         日期
         <input
@@ -56,9 +89,9 @@ export function DailyLogForm({ disabled, symptomTypes }: { disabled: boolean; sy
       </label>
 
       <div className="mt-4 grid gap-3">
-        <MealInput name="breakfast" label="早餐" disabled={disabled} />
-        <MealInput name="lunch" label="午餐" disabled={disabled} />
-        <MealInput name="dinner" label="晚餐" disabled={disabled} />
+        <MealInput name="breakfast" label="早餐" disabled={disabled} defaultFoods={editingLog?.breakfast ?? []} />
+        <MealInput name="lunch" label="午餐" disabled={disabled} defaultFoods={editingLog?.lunch ?? []} />
+        <MealInput name="dinner" label="晚餐" disabled={disabled} defaultFoods={editingLog?.dinner ?? []} />
       </div>
 
       <div className="mt-4 rounded-3xl bg-oat p-4">
@@ -80,28 +113,33 @@ export function DailyLogForm({ disabled, symptomTypes }: { disabled: boolean; sy
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-black">{type}</span>
                   <span className="text-xs font-bold text-kelp/60">
-                    {selectedSymptoms[type] ? `${selectedSymptoms[type]} 级` : "未选择"}
+                    {selectedSymptoms[type] !== undefined ? `${formatSeverity(selectedSymptoms[type])} / 5` : "未选择"}
                   </span>
                 </div>
-                <div className="mt-2 grid grid-cols-5 gap-2">
-                  {[1, 2, 3, 4, 5].map((level) => (
-                    <button
-                      key={level}
-                      type="button"
-                      disabled={disabled}
-                      onClick={() =>
-                        setSelectedSymptoms((current) => ({
-                          ...current,
-                          [type]: level,
-                        }))
-                      }
-                      className={`rounded-xl py-2 text-sm font-black ${
-                        selectedSymptoms[type] === level ? "bg-clay text-white" : "bg-oat text-kelp"
-                      } disabled:opacity-40`}
-                    >
-                      {level}
-                    </button>
-                  ))}
+                <div className="mt-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="0.5"
+                    disabled={disabled}
+                    value={selectedSymptoms[type] ?? 0}
+                    onChange={(event) =>
+                      setSelectedSymptoms((current) => ({
+                        ...current,
+                        [type]: Number(event.target.value),
+                      }))
+                    }
+                    className="h-2 w-full cursor-pointer accent-clay disabled:cursor-not-allowed disabled:opacity-40"
+                  />
+                  <div className="mt-2 flex justify-between text-[11px] font-bold text-kelp/50">
+                    <span>0</span>
+                    <span>1</span>
+                    <span>2</span>
+                    <span>3</span>
+                    <span>4</span>
+                    <span>5</span>
+                  </div>
                 </div>
               </div>
             ))
@@ -115,6 +153,7 @@ export function DailyLogForm({ disabled, symptomTypes }: { disabled: boolean; sy
         name="notes"
         disabled={disabled}
         maxLength={600}
+        defaultValue={editingLog?.notes ?? ""}
         placeholder="备注，可不填"
         className="mt-4 w-full rounded-2xl border-kelp/15 bg-white/80"
       />
@@ -127,13 +166,28 @@ export function DailyLogForm({ disabled, symptomTypes }: { disabled: boolean; sy
   );
 }
 
-function MealInput({ name, label, disabled }: { name: string; label: string; disabled: boolean }) {
+function formatSeverity(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function MealInput({
+  name,
+  label,
+  disabled,
+  defaultFoods,
+}: {
+  name: string;
+  label: string;
+  disabled: boolean;
+  defaultFoods: string[];
+}) {
   return (
     <label className="block text-sm font-bold">
       {label}
       <input
         name={name}
         disabled={disabled}
+        defaultValue={defaultFoods.join("，")}
         placeholder="用逗号分隔食物"
         className="mt-2 w-full rounded-2xl border-kelp/15 bg-white/80"
       />

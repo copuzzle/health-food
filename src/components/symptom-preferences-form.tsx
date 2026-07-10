@@ -34,7 +34,7 @@ export function SymptomPreferencesForm({
   return (
     <form action={submit} className="rounded-[2rem] bg-white/75 p-5 shadow-soft">
       <h2 className="text-lg font-black">常用症状</h2>
-      <p className="mt-2 text-sm leading-6 text-kelp/70">最多设置 3 个，登记时会平铺成 1-5 级按钮。</p>
+      <p className="mt-2 text-sm leading-6 text-kelp/70">最多设置 3 个，登记时用 0-5 滑块记录，步进 0.5。</p>
       <div className="mt-4 grid gap-3">
         {[0, 1, 2].map((index) => (
           <input

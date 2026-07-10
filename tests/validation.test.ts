@@ -31,7 +31,7 @@ describe("input validation", () => {
     ).toBe(false);
   });
 
-  it("limits symptom severity to 1 through 5", () => {
+  it("limits symptom severity to 0 through 5", () => {
     expect(
       dailyLogSchema.safeParse({
         date: new Date(),
@@ -39,6 +39,30 @@ describe("input validation", () => {
         lunch: [],
         dinner: [],
         symptoms: [{ symptomType: "腹泻", severity: 6 }],
+      }).success,
+    ).toBe(false);
+  });
+
+  it("allows half-step symptom severity", () => {
+    expect(
+      dailyLogSchema.safeParse({
+        date: new Date(),
+        breakfast: ["米饭"],
+        lunch: [],
+        dinner: [],
+        symptoms: [{ symptomType: "腹泻", severity: 2.5 }],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects non-half-step symptom severity", () => {
+    expect(
+      dailyLogSchema.safeParse({
+        date: new Date(),
+        breakfast: ["米饭"],
+        lunch: [],
+        dinner: [],
+        symptoms: [{ symptomType: "腹泻", severity: 2.25 }],
       }).success,
     ).toBe(false);
   });
@@ -67,7 +91,7 @@ describe("input validation", () => {
         breakfast: ["鸡蛋"],
         lunch: ["米饭", "鸡胸肉"],
         dinner: [],
-        symptoms: [{ symptomType: "腹痛", severity: 2 }],
+        symptoms: [{ symptomType: "腹痛", severity: 2.5 }],
       }).success,
     ).toBe(true);
   });

@@ -72,7 +72,7 @@ model SymptomLog {
   foodLogId   String
   userId      String
   symptomType String
-  severity    Int
+  severity    Float
   occurredAt  DateTime
   notes       String?
   foodLog     FoodLog  @relation(fields: [foodLogId], references: [id], onDelete: Cascade)
@@ -116,7 +116,7 @@ model DailySymptomRating {
   dailyLogId  String
   userId      String
   symptomType String
-  severity    Int
+  severity    Float
   createdAt   DateTime @default(now())
   dailyLog    DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)

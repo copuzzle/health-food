@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "DailySymptomRating" ALTER COLUMN "severity" SET DATA TYPE DOUBLE PRECISION;
+
+-- AlterTable
+ALTER TABLE "SymptomLog" ALTER COLUMN "severity" SET DATA TYPE DOUBLE PRECISION;

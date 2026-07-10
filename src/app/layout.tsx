@@ -20,9 +20,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-24 pt-4">
           <header className="mb-4 flex items-center justify-between rounded-[2rem] border border-white/60 bg-white/55 px-4 py-3 shadow-soft backdrop-blur">
-            <Link href="/" className="leading-tight">
+            <Link href="/logs" className="leading-tight">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-clay">Eat Health</p>
-              <h1 className="text-xl font-black text-kelp">低FODMAP地图</h1>
+              <h1 className="text-xl font-black text-kelp">饮食记录</h1>
             </Link>
             <Link
               href="/profile"
