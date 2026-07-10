@@ -26,3 +26,7 @@
 - Production deployment is not part of normal development workflow.
 - Vercel, Neon, GitHub push, and production Prisma migrations are production-affecting operations.
 - Only run those operations after an explicit user request such as "部署", "上线", "推送到 GitHub", or equivalent.
+
+## GitHub Push Notes
+
+- If the default GitHub SSH connection on port 22 is unavailable, push through SSH port 443 with `GIT_SSH_COMMAND='ssh -o HostName=ssh.github.com -o Port=443' git push`.
