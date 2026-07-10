@@ -1,10 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 export function LoginPanel({ user }: { user: { email: string; name: string | null } | null }) {
-  const router = useRouter();
   const formRef = useRef<HTMLFormElement | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -23,7 +21,7 @@ export function LoginPanel({ user }: { user: { email: string; name: string | nul
 
     if (response.ok) {
       setStatus(mode === "login" ? "已登录" : "已注册并登录");
-      router.refresh();
+      window.location.reload();
       return;
     }
 
@@ -40,7 +38,7 @@ export function LoginPanel({ user }: { user: { email: string; name: string | nul
 
   async function logout() {
     await fetch("/api/session", { method: "DELETE" });
-    router.refresh();
+    window.location.reload();
   }
 
   if (user) {
