@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AsyncSubmitButton } from "@/components/async-submit-button";
 import { toDateInputValue } from "@/lib/dates";
 import { parseCommaList } from "@/lib/validation";
 
@@ -38,27 +39,31 @@ export function DailyLogForm({
       severity,
     }));
 
-    setStatus("保存中...");
-    const response = await fetch("/api/daily-logs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date: formData.get("date"),
-        breakfast: parseCommaList(formData.get("breakfast")),
-        lunch: parseCommaList(formData.get("lunch")),
-        dinner: parseCommaList(formData.get("dinner")),
-        notes: formData.get("notes") || null,
-        symptoms,
-      }),
-    });
+    setStatus(null);
+    try {
+      const response = await fetch("/api/daily-logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: formData.get("date"),
+          breakfast: parseCommaList(formData.get("breakfast")),
+          lunch: parseCommaList(formData.get("lunch")),
+          dinner: parseCommaList(formData.get("dinner")),
+          notes: formData.get("notes") || null,
+          symptoms,
+        }),
+      });
 
-    if (response.ok) {
-      setSelectedSymptoms({});
-      setStatus("记录已保存");
-      router.push("/logs");
-      router.refresh();
-    } else {
-      setStatus("保存失败，请确认至少填写一餐");
+      if (response.ok) {
+        setSelectedSymptoms({});
+        setStatus("记录已保存");
+        router.push("/logs");
+        router.refresh();
+      } else {
+        setStatus("保存失败，请确认至少填写一餐");
+      }
+    } catch {
+      setStatus("保存失败，请检查网络后重试");
     }
   }
 
@@ -158,9 +163,12 @@ export function DailyLogForm({
         className="mt-4 w-full rounded-2xl border-kelp/15 bg-white/80"
       />
 
-      <button disabled={disabled} className="mt-5 w-full rounded-2xl bg-kelp px-4 py-3 font-black text-oat disabled:opacity-45">
-        {disabled ? "登录后登记" : "保存"}
-      </button>
+      <AsyncSubmitButton
+        disabled={disabled}
+        idleLabel={disabled ? "登录后登记" : "保存"}
+        pendingLabel="保存中..."
+        className="mt-5 w-full rounded-2xl bg-kelp px-4 py-3 font-black text-oat disabled:opacity-45"
+      />
       {status && <p className="mt-3 text-sm text-kelp/70">{status}</p>}
     </form>
   );

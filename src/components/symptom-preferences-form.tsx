@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AsyncSubmitButton } from "@/components/async-submit-button";
 
 export function SymptomPreferencesForm({
   disabled,
@@ -14,20 +15,22 @@ export function SymptomPreferencesForm({
   const [status, setStatus] = useState<string | null>(null);
 
   async function submit(formData: FormData) {
-    setStatus("保存中...");
+    setStatus(null);
     const symptoms = [formData.get("symptom1"), formData.get("symptom2"), formData.get("symptom3")]
       .map((item) => (typeof item === "string" ? item.trim() : ""))
       .filter(Boolean);
 
-    const response = await fetch("/api/symptom-preferences", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ symptoms }),
-    });
+    try {
+      const response = await fetch("/api/symptom-preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symptoms }),
+      });
 
-    setStatus(response.ok ? "症状设置已保存" : "保存失败");
-    if (response.ok) {
-      router.refresh();
+      setStatus(response.ok ? "症状设置已保存" : "保存失败");
+      if (response.ok) router.refresh();
+    } catch {
+      setStatus("保存失败，请检查网络后重试");
     }
   }
 
@@ -48,9 +51,12 @@ export function SymptomPreferencesForm({
           />
         ))}
       </div>
-      <button disabled={disabled} className="mt-5 w-full rounded-2xl bg-kelp px-4 py-3 font-black text-oat disabled:opacity-45">
-        {disabled ? "登录后设置" : "保存症状"}
-      </button>
+      <AsyncSubmitButton
+        disabled={disabled}
+        idleLabel={disabled ? "登录后设置" : "保存症状"}
+        pendingLabel="保存中..."
+        className="mt-5 w-full rounded-2xl bg-kelp px-4 py-3 font-black text-oat disabled:opacity-45"
+      />
       {status && <p className="mt-3 text-sm text-kelp/70">{status}</p>}
     </form>
   );

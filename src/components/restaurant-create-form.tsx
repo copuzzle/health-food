@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FOODMAP_TAGS } from "@/lib/constants";
+import { AsyncSubmitButton } from "@/components/async-submit-button";
 
 export function RestaurantCreateForm({ disabled }: { disabled: boolean }) {
   const router = useRouter();
@@ -10,24 +11,25 @@ export function RestaurantCreateForm({ disabled }: { disabled: boolean }) {
 
   async function submit(formData: FormData) {
     const tags = FOODMAP_TAGS.filter((tag) => formData.getAll("tags").includes(tag));
-    setStatus("提交中...");
+    setStatus(null);
+    try {
+      const response = await fetch("/api/restaurants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          address: formData.get("address"),
+          city: formData.get("city"),
+          lat: formData.get("lat"),
+          lng: formData.get("lng"),
+          tags,
+        }),
+      });
 
-    const response = await fetch("/api/restaurants", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: formData.get("name"),
-        address: formData.get("address"),
-        city: formData.get("city"),
-        lat: formData.get("lat"),
-        lng: formData.get("lng"),
-        tags,
-      }),
-    });
-
-    setStatus(response.ok ? "餐馆已创建" : "提交失败：请确认已登录且信息完整");
-    if (response.ok) {
-      router.refresh();
+      setStatus(response.ok ? "餐馆已创建" : "提交失败：请确认已登录且信息完整");
+      if (response.ok) router.refresh();
+    } catch {
+      setStatus("提交失败，请检查网络后重试");
     }
   }
 
@@ -52,9 +54,12 @@ export function RestaurantCreateForm({ disabled }: { disabled: boolean }) {
           </label>
         ))}
       </div>
-      <button disabled={disabled} className="mt-5 w-full rounded-2xl bg-kelp px-4 py-3 font-black text-oat disabled:opacity-45">
-        {disabled ? "登录后创建" : "提交餐馆"}
-      </button>
+      <AsyncSubmitButton
+        disabled={disabled}
+        idleLabel={disabled ? "登录后创建" : "提交餐馆"}
+        pendingLabel="提交中..."
+        className="mt-5 w-full rounded-2xl bg-kelp px-4 py-3 font-black text-oat disabled:opacity-45"
+      />
       {status && <p className="mt-3 text-sm text-kelp/70">{status}</p>}
     </form>
   );
