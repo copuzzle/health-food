@@ -5,6 +5,7 @@ import { useState } from "react";
 import { AsyncSubmitButton } from "@/components/async-submit-button";
 import { toDateInputValue } from "@/lib/dates";
 import { parseCommaList } from "@/lib/validation";
+import { useI18n } from "@/components/i18n-provider";
 
 export type EditableDailyLog = {
   id: string;
@@ -26,6 +27,7 @@ export function DailyLogForm({
   editingLog?: EditableDailyLog | null;
 }) {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const [status, setStatus] = useState<string | null>(null);
   const [selectedSymptoms, setSelectedSymptoms] = useState<Record<string, number>>(() =>
     Object.fromEntries((editingLog?.symptoms ?? []).map((symptom) => [symptom.symptomType, symptom.severity])),
@@ -56,33 +58,33 @@ export function DailyLogForm({
 
       if (response.ok) {
         setSelectedSymptoms({});
-        setStatus("记录已保存");
+        setStatus(t("log.saved"));
         router.push("/logs");
         router.refresh();
       } else {
-        setStatus("保存失败，请确认至少填写一餐");
+        setStatus(t("log.saveInvalid"));
       }
     } catch {
-      setStatus("保存失败，请检查网络后重试");
+      setStatus(t("common.networkError"));
     }
   }
 
   return (
     <form key={formKey} action={submit} className="rounded-[2rem] bg-white/75 p-5 shadow-soft">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-black">{editingLog ? "修改记录" : "登记"}</h2>
+        <h2 className="text-lg font-black">{editingLog ? t("log.editTitle") : t("log.createTitle")}</h2>
         {editingLog && (
           <button
             type="button"
             onClick={() => router.push("/logs")}
             className="rounded-full bg-oat px-3 py-1 text-xs font-bold text-kelp"
           >
-            取消编辑
+            {t("log.cancelEdit")}
           </button>
         )}
       </div>
       <label className="mt-4 block text-sm font-bold">
-        日期
+        {t("log.date")}
         <input
           name="date"
           type="date"
@@ -94,21 +96,21 @@ export function DailyLogForm({
       </label>
 
       <div className="mt-4 grid gap-3">
-        <MealInput name="breakfast" label="早餐" disabled={disabled} defaultFoods={editingLog?.breakfast ?? []} />
-        <MealInput name="lunch" label="午餐" disabled={disabled} defaultFoods={editingLog?.lunch ?? []} />
-        <MealInput name="dinner" label="晚餐" disabled={disabled} defaultFoods={editingLog?.dinner ?? []} />
+        <MealInput name="breakfast" label={t("meal.breakfast")} placeholder={t("meal.placeholder")} separator={locale === "en" ? ", " : "，"} disabled={disabled} defaultFoods={editingLog?.breakfast ?? []} />
+        <MealInput name="lunch" label={t("meal.lunch")} placeholder={t("meal.placeholder")} separator={locale === "en" ? ", " : "，"} disabled={disabled} defaultFoods={editingLog?.lunch ?? []} />
+        <MealInput name="dinner" label={t("meal.dinner")} placeholder={t("meal.placeholder")} separator={locale === "en" ? ", " : "，"} disabled={disabled} defaultFoods={editingLog?.dinner ?? []} />
       </div>
 
       <div className="mt-4 rounded-3xl bg-oat p-4">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-black">当天症状</p>
+          <p className="text-sm font-black">{t("symptoms.today")}</p>
           <button
             type="button"
             disabled={disabled || Object.keys(selectedSymptoms).length === 0}
             onClick={() => setSelectedSymptoms({})}
             className="rounded-full bg-white/70 px-3 py-1 text-xs font-bold text-kelp disabled:opacity-40"
           >
-            清空
+            {t("symptoms.clear")}
           </button>
         </div>
         <div className="mt-3 space-y-3">
@@ -118,7 +120,7 @@ export function DailyLogForm({
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-black">{type}</span>
                   <span className="text-xs font-bold text-kelp/60">
-                    {selectedSymptoms[type] !== undefined ? `${formatSeverity(selectedSymptoms[type])} / 5` : "未选择"}
+                    {selectedSymptoms[type] !== undefined ? `${formatSeverity(selectedSymptoms[type])} / 5` : t("symptoms.notSelected")}
                   </span>
                 </div>
                 <div className="mt-3">
@@ -149,7 +151,7 @@ export function DailyLogForm({
               </div>
             ))
           ) : (
-            <p className="text-sm text-kelp/65">先在“我的”页面设置最多 3 个常用症状。</p>
+            <p className="text-sm text-kelp/65">{t("symptoms.setupHint")}</p>
           )}
         </div>
       </div>
@@ -159,14 +161,14 @@ export function DailyLogForm({
         disabled={disabled}
         maxLength={600}
         defaultValue={editingLog?.notes ?? ""}
-        placeholder="备注，可不填"
+        placeholder={t("log.notesPlaceholder")}
         className="mt-4 w-full rounded-2xl border-kelp/15 bg-white/80"
       />
 
       <AsyncSubmitButton
         disabled={disabled}
-        idleLabel={disabled ? "登录后登记" : "保存"}
-        pendingLabel="保存中..."
+        idleLabel={disabled ? t("log.loginToCreate") : t("common.save")}
+        pendingLabel={t("common.saving")}
         className="mt-5 w-full rounded-2xl bg-kelp px-4 py-3 font-black text-oat disabled:opacity-45"
       />
       {status && <p className="mt-3 text-sm text-kelp/70">{status}</p>}
@@ -183,11 +185,15 @@ function MealInput({
   label,
   disabled,
   defaultFoods,
+  placeholder,
+  separator,
 }: {
   name: string;
   label: string;
   disabled: boolean;
   defaultFoods: string[];
+  placeholder: string;
+  separator: string;
 }) {
   return (
     <label className="block text-sm font-bold">
@@ -195,8 +201,8 @@ function MealInput({
       <input
         name={name}
         disabled={disabled}
-        defaultValue={defaultFoods.join("，")}
-        placeholder="用逗号分隔食物"
+        defaultValue={defaultFoods.join(separator)}
+        placeholder={placeholder}
         className="mt-2 w-full rounded-2xl border-kelp/15 bg-white/80"
       />
     </label>

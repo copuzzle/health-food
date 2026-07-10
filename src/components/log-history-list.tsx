@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getI18n } from "@/lib/i18n-server";
 
 export type LogHistoryItem = {
   id: string;
@@ -14,8 +15,9 @@ export type LogHistoryItem = {
   }>;
 };
 
-export function LogHistoryList({ logs }: { logs: LogHistoryItem[] }) {
-  const logsByMonth = groupLogsByMonth(logs);
+export async function LogHistoryList({ logs }: { logs: LogHistoryItem[] }) {
+  const { locale, dictionary } = await getI18n();
+  const logsByMonth = groupLogsByMonth(logs, locale);
 
   return (
     <div className="space-y-5">
@@ -25,7 +27,7 @@ export function LogHistoryList({ logs }: { logs: LogHistoryItem[] }) {
             {group.month}
           </div>
           {group.logs.map((log) => (
-            <LogCard key={log.id} log={log} />
+            <LogCard key={log.id} log={log} locale={locale} dictionary={dictionary} />
           ))}
         </div>
       ))}
@@ -33,11 +35,11 @@ export function LogHistoryList({ logs }: { logs: LogHistoryItem[] }) {
   );
 }
 
-function groupLogsByMonth(logs: LogHistoryItem[]) {
+function groupLogsByMonth(logs: LogHistoryItem[], locale: string) {
   const groups = new Map<string, LogHistoryItem[]>();
 
   for (const log of logs) {
-    const month = log.date.toLocaleDateString("zh-CN", {
+    const month = log.date.toLocaleDateString(locale, {
       year: "numeric",
       month: "long",
     });
@@ -50,25 +52,25 @@ function groupLogsByMonth(logs: LogHistoryItem[]) {
   }));
 }
 
-function LogCard({ log }: { log: LogHistoryItem }) {
+function LogCard({ log, locale, dictionary }: { log: LogHistoryItem; locale: string; dictionary: Record<string, string> }) {
   return (
     <article className="rounded-[1.75rem] bg-oat/75 p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-lg font-black text-kelp">{formatDateLabel(log.date)}</p>
-          <p className="text-xs font-bold text-kelp/50">{formatWeekday(log.date)}</p>
+          <p className="text-lg font-black text-kelp">{formatDateLabel(log.date, locale)}</p>
+          <p className="text-xs font-bold text-kelp/50">{formatWeekday(log.date, locale)}</p>
         </div>
         <Link
           href={`/logs?edit=${log.id}`}
           className="rounded-full bg-kelp px-3 py-1 text-xs font-black text-oat"
         >
-          编辑
+          {dictionary["common.edit"]}
         </Link>
       </div>
       <div className="mt-3 grid gap-2 text-sm">
-        <MealLine label="早餐" foods={log.breakfast} />
-        <MealLine label="午餐" foods={log.lunch} />
-        <MealLine label="晚餐" foods={log.dinner} />
+        <MealLine label={dictionary["meal.breakfast"]} foods={log.breakfast} emptyLabel={dictionary["common.notFilled"]} locale={locale} />
+        <MealLine label={dictionary["meal.lunch"]} foods={log.lunch} emptyLabel={dictionary["common.notFilled"]} locale={locale} />
+        <MealLine label={dictionary["meal.dinner"]} foods={log.dinner} emptyLabel={dictionary["common.notFilled"]} locale={locale} />
       </div>
       {log.notes && <p className="mt-2 text-sm leading-6 text-kelp/70">{log.notes}</p>}
       {log.symptoms.length > 0 && (
@@ -84,11 +86,11 @@ function LogCard({ log }: { log: LogHistoryItem }) {
   );
 }
 
-function MealLine({ label, foods }: { label: string; foods: string[] }) {
+function MealLine({ label, foods, emptyLabel, locale }: { label: string; foods: string[]; emptyLabel: string; locale: string }) {
   return (
     <p className="rounded-2xl bg-white/70 px-3 py-2">
       <span className="font-black">{label}：</span>
-      {foods.length > 0 ? foods.join("，") : "未填写"}
+      {foods.length > 0 ? foods.join(locale === "en" ? ", " : "，") : emptyLabel}
     </p>
   );
 }
@@ -97,15 +99,15 @@ function formatSeverity(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
-function formatDateLabel(date: Date) {
-  return date.toLocaleDateString("zh-CN", {
+function formatDateLabel(date: Date, locale: string) {
+  return date.toLocaleDateString(locale, {
     month: "numeric",
     day: "numeric",
   });
 }
 
-function formatWeekday(date: Date) {
-  return date.toLocaleDateString("zh-CN", {
+function formatWeekday(date: Date, locale: string) {
+  return date.toLocaleDateString(locale, {
     weekday: "long",
   });
 }

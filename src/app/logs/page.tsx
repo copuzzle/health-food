@@ -5,6 +5,8 @@ import { SymptomTrendChart } from "@/components/symptom-trend-chart";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { countSymptomsByType } from "@/lib/stats";
+import { getI18n } from "@/lib/i18n-server";
+import { translate } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,7 @@ type Props = {
 };
 
 export default async function LogsPage({ searchParams }: Props) {
+  const { dictionary } = await getI18n();
   const editId = (await searchParams)?.edit;
   const user = await getCurrentUser().catch(() => null);
   const logs = user
@@ -68,24 +71,24 @@ export default async function LogsPage({ searchParams }: Props) {
       />
 
       <section className="grid grid-cols-2 gap-3">
-        <SummaryCard label="记录天数" value={logs.length} />
-        <SummaryCard label="症状条目" value={symptoms.length} />
+        <SummaryCard label={dictionary["logs.days"]} value={logs.length} />
+        <SummaryCard label={dictionary["logs.symptomEntries"]} value={symptoms.length} />
       </section>
 
       <section className="rounded-[2rem] bg-white/75 p-5 shadow-soft">
         <div className="flex items-end justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-clay">History</p>
-            <h2 className="text-xl font-black">历史记录</h2>
+            <h2 className="text-xl font-black">{dictionary["logs.history"]}</h2>
           </div>
           <Link href="/logs/history" className="rounded-full bg-kelp px-3 py-1 text-xs font-black text-oat">
-            查看全部
+            {dictionary["logs.viewAll"]}
           </Link>
         </div>
         {logs.length > 0 ? (
           <>
             <p className="mt-3 text-xs font-bold text-kelp/55">
-              当前页只显示最近 {recentLogs.length} 天，更多记录进入完整历史页查看。
+              {translate(dictionary, "logs.recentOnly", { count: recentLogs.length })}
             </p>
             <div className="mt-4">
               <LogHistoryList logs={recentLogs} />
@@ -93,31 +96,31 @@ export default async function LogsPage({ searchParams }: Props) {
           </>
         ) : (
           <p className="mt-4 rounded-[1.5rem] bg-oat p-5 text-sm text-kelp/70">
-            {user ? "暂无历史记录。保存后会按日期显示在这里。" : "登录后可以查看过去多天的个人饮食和症状记录。"}
+            {user ? dictionary["logs.empty"] : dictionary["logs.loginHint"]}
           </p>
         )}
       </section>
 
       <section className="rounded-[2rem] bg-white/75 p-5 shadow-soft">
-        <h2 className="text-lg font-black">症状统计</h2>
+        <h2 className="text-lg font-black">{dictionary["stats.title"]}</h2>
         <div className="mt-4 space-y-3">
           {Object.entries(byType).length > 0 ? (
             Object.entries(byType).map(([type, stat]) => (
               <div key={type} className="flex items-center justify-between rounded-2xl bg-oat px-4 py-3 text-sm">
                 <span className="font-bold">{type}</span>
-                <span>{stat.count} 次 / 最高 {formatSeverity(stat.maxSeverity)}</span>
+                <span>{translate(dictionary, "stats.summary", { count: stat.count, max: formatSeverity(stat.maxSeverity) })}</span>
               </div>
             ))
           ) : (
-            <p className="text-sm text-kelp/65">暂无症状统计。</p>
+            <p className="text-sm text-kelp/65">{dictionary["stats.empty"]}</p>
           )}
         </div>
       </section>
 
       {symptomTypes.length > 0 && (
         <section className="rounded-[2rem] bg-white/75 p-5 shadow-soft">
-          <h2 className="text-lg font-black">按日趋势</h2>
-          <p className="mt-1 text-xs text-kelp/55">展示你在“我的”中设置的症状指标，最多显示最近 7 天</p>
+          <h2 className="text-lg font-black">{dictionary["trend.title"]}</h2>
+          <p className="mt-1 text-xs text-kelp/55">{dictionary["trend.subtitle"]}</p>
           <div className="mt-4">
             <SymptomTrendChart logs={logs} symptomTypes={symptomTypes} />
           </div>
@@ -125,9 +128,9 @@ export default async function LogsPage({ searchParams }: Props) {
       )}
 
       <section className="space-y-3">
-        <h2 className="text-xl font-black">更多分析</h2>
+        <h2 className="text-xl font-black">{dictionary["analysis.title"]}</h2>
         <p className="rounded-[2rem] bg-white/60 p-5 text-sm leading-6 text-kelp/70">
-          后续可以在这里加入按食物和连续天数的筛选。当前先保证多天记录可浏览、可编辑。
+          {dictionary["analysis.body"]}
         </p>
       </section>
     </div>

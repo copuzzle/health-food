@@ -11,13 +11,14 @@ const WIDTH = 640;
 const HEIGHT = 260;
 const PADDING = { top: 18, right: 18, bottom: 42, left: 34 };
 
-export function SymptomTrendChart({
+export async function SymptomTrendChart({
   logs,
   symptomTypes,
 }: {
   logs: TrendLog[];
   symptomTypes: string[];
 }) {
+  const { locale, dictionary } = await getI18n();
   const valuesByDay = new Map(
     logs.map((log) => [
       formatDay(log.date),
@@ -31,7 +32,7 @@ export function SymptomTrendChart({
   const hasValues = pointsByDay.some((point) => symptomTypes.some((type) => point.values.has(type)));
 
   if (!hasValues) {
-    return <p className="text-sm text-kelp/65">记录所选症状后会显示趋势。</p>;
+    return <p className="text-sm text-kelp/65">{dictionary["trend.empty"]}</p>;
   }
 
   const plotWidth = WIDTH - PADDING.left - PADDING.right;
@@ -55,7 +56,7 @@ export function SymptomTrendChart({
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           role="img"
-          aria-label={`${symptomTypes.join("、")}按日严重度趋势，范围 0 到 5`}
+          aria-label={translate(dictionary, "trend.aria", { types: symptomTypes.join(locale === "en" ? ", " : "、") })}
           className="h-auto min-w-[36rem] w-full"
         >
           {[0, 1, 2, 3, 4, 5].map((tick) => (
@@ -118,7 +119,7 @@ export function SymptomTrendChart({
           )}
         </svg>
       </div>
-      <p className="mt-2 text-xs text-kelp/50">纵轴为严重程度 0–5；未记录的日期不连线。</p>
+      <p className="mt-2 text-xs text-kelp/50">{dictionary["trend.note"]}</p>
     </div>
   );
 }
@@ -162,3 +163,5 @@ function getRecentDays(count: number) {
 function formatSeverity(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
+import { getI18n } from "@/lib/i18n-server";
+import { translate } from "@/lib/i18n";

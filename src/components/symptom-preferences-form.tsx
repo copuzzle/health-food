@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AsyncSubmitButton } from "@/components/async-submit-button";
+import { useI18n } from "@/components/i18n-provider";
 
 export function SymptomPreferencesForm({
   disabled,
@@ -12,6 +13,7 @@ export function SymptomPreferencesForm({
   initialSymptoms: string[];
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [status, setStatus] = useState<string | null>(null);
 
   async function submit(formData: FormData) {
@@ -27,17 +29,17 @@ export function SymptomPreferencesForm({
         body: JSON.stringify({ symptoms }),
       });
 
-      setStatus(response.ok ? "症状设置已保存" : "保存失败");
+      setStatus(response.ok ? t("preferences.saved") : t("preferences.failed"));
       if (response.ok) router.refresh();
     } catch {
-      setStatus("保存失败，请检查网络后重试");
+      setStatus(t("common.networkError"));
     }
   }
 
   return (
     <form action={submit} className="rounded-[2rem] bg-white/75 p-5 shadow-soft">
-      <h2 className="text-lg font-black">常用症状</h2>
-      <p className="mt-2 text-sm leading-6 text-kelp/70">最多设置 3 个，登记时用 0-5 滑块记录，步进 0.5。</p>
+      <h2 className="text-lg font-black">{t("preferences.title")}</h2>
+      <p className="mt-2 text-sm leading-6 text-kelp/70">{t("preferences.description")}</p>
       <div className="mt-4 grid gap-3">
         {[0, 1, 2].map((index) => (
           <input
@@ -46,15 +48,15 @@ export function SymptomPreferencesForm({
             disabled={disabled}
             defaultValue={initialSymptoms[index] ?? ""}
             maxLength={20}
-            placeholder={["例如：腹泻", "例如：腹痛", "例如：胀气"][index]}
+            placeholder={[t("preferences.example1"), t("preferences.example2"), t("preferences.example3")][index]}
             className="rounded-2xl border-kelp/15 bg-white/80"
           />
         ))}
       </div>
       <AsyncSubmitButton
         disabled={disabled}
-        idleLabel={disabled ? "登录后设置" : "保存症状"}
-        pendingLabel="保存中..."
+        idleLabel={disabled ? t("preferences.login") : t("preferences.save")}
+        pendingLabel={t("common.saving")}
         className="mt-5 w-full rounded-2xl bg-kelp px-4 py-3 font-black text-oat disabled:opacity-45"
       />
       {status && <p className="mt-3 text-sm text-kelp/70">{status}</p>}

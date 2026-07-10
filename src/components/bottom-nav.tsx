@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useI18n } from "@/components/i18n-provider";
 
 const items = [
-  { href: "/logs", label: "记录" },
-  { href: "/profile", label: "我的" },
+  { href: "/logs", labelKey: "nav.logs" },
+  { href: "/profile", labelKey: "nav.profile" },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useI18n();
 
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-50 border-t border-white/60 bg-oat/90 px-4 py-3 backdrop-blur">
@@ -24,7 +26,7 @@ export function BottomNav() {
                 active ? "bg-kelp text-oat shadow-soft" : "bg-white/60 text-kelp"
               }`}
             >
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           );
         })}
