@@ -6,6 +6,7 @@ import { useI18n } from "@/components/i18n-provider";
 
 const items = [
   { href: "/logs", labelKey: "nav.logs" },
+  { href: "/foods", labelKey: "nav.foods" },
   { href: "/profile", labelKey: "nav.profile" },
 ];
 
@@ -15,7 +16,7 @@ export function BottomNav() {
 
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-50 border-t border-white/60 bg-oat/90 px-4 py-3 backdrop-blur">
-      <div className="mx-auto grid max-w-md grid-cols-2 gap-2">
+      <div className="mx-auto grid max-w-md grid-cols-3 gap-2">
         {items.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
